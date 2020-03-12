@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import static java.lang.String.format;
@@ -23,25 +24,32 @@ public class ParquetSink<T extends Entity> implements Sink {
     private final boolean excludeMetadata;
     private final EntityType entityType;
     private final List<Predicate<T>> filters;
+    private final int partitions;
 
-    private ParquetWriter<T> writer;
+    private AtomicLong idx = new AtomicLong(0L);
+    private List<ParquetWriter<T>> writers;
 
-    public ParquetSink(Path source, Path destinationFolder, boolean excludeMetadata, EntityType entityType) {
+    public ParquetSink(Path source, Path destinationFolder, boolean excludeMetadata, EntityType entityType, int partitions) {
         this.source = source;
         this.destinationFolder = destinationFolder;
         this.excludeMetadata = excludeMetadata;
         this.entityType = entityType;
+        this.partitions = partitions;
         this.filters = new ArrayList<>();
+        this.writers = new ArrayList<>();
     }
 
     @Override
     public void initialize(Map<String, Object> metaData) {
         final String pbfName = source.getFileName().toString();
         final String entityName = entityType.name().toLowerCase();
-        final Path destination = destinationFolder.resolve(format("%s.%s.parquet", pbfName, entityName));
+
         try {
-            this.writer = ParquetWriterFactory.buildFor(destination.toAbsolutePath().toString(), excludeMetadata,
-                    entityType);
+            for (int i = 0; i < partitions; ++i) {
+                final Path destination = destinationFolder.resolve(format("%s/%s-part%d.parquet", entityName, pbfName, i));
+                ParquetWriter<T> writer = ParquetWriterFactory.buildFor(destination.toAbsolutePath().toString(), excludeMetadata, entityType);
+                writers.add(writer);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Unable to build writers", e);
         }
@@ -53,6 +61,8 @@ public class ParquetSink<T extends Entity> implements Sink {
             if (this.entityType == entityContainer.getEntity().getType()) {
                 final T entity = (T) entityContainer.getEntity();
                 if (filters.stream().noneMatch(filter -> filter.test(entity))) {
+                    Number next = idx.getAndIncrement() % partitions;
+                    ParquetWriter<T> writer = writers.get(next.intValue());
                     writer.write(entity);
                 }
             }
@@ -64,7 +74,9 @@ public class ParquetSink<T extends Entity> implements Sink {
     @Override
     public void complete() {
         try {
-            this.writer.close();
+            for (ParquetWriter<T> writer: writers) {
+                writer.close();
+            }
         } catch (IOException e) {
             throw new RuntimeException("Unable to close writers", e);
         }

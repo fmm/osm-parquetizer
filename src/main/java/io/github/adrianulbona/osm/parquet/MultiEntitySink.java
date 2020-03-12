@@ -27,7 +27,7 @@ public class MultiEntitySink implements Sink {
     public MultiEntitySink(Config config) {
         final List<EntityType> entityTypes = config.entitiesToBeParquetized();
         this.converters = entityTypes.stream().map(type -> new ParquetSink<>(config.getSource(),
-                config.getDestinationFolder(), config.getExcludeMetadata(), type)).collect(toList());
+                config.getDestinationFolder(), config.getExcludeMetadata(), type, config.getPartitions())).collect(toList());
         this.observers = new ArrayList<>();
     }
 
@@ -81,5 +81,7 @@ public class MultiEntitySink implements Sink {
         boolean getExcludeMetadata();
 
         List<EntityType> entitiesToBeParquetized();
+
+        int getPartitions();
     }
 }

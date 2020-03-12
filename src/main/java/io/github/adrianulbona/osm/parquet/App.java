@@ -50,7 +50,11 @@ public class App {
         @Argument(index = 0, metaVar = "pbf-path", usage = "the OSM PBF file to be parquetized", required = true)
         private Path source;
 
-        @Argument(index = 1, metaVar = "output-path", usage = "the directory where to store the Parquet files",
+        @Argument(index = 1, metaVar = "partitions", usage = "the number of partitions",
+            required = false)
+        private int partitions = 1;
+
+        @Argument(index = 2, metaVar = "output-path", usage = "the directory where to store the Parquet files",
                 required = false)
         private Path destinationFolder;
 
@@ -94,6 +98,11 @@ public class App {
                 entityTypes.add(Relation);
             }
             return unmodifiableList(entityTypes);
+        }
+
+        @Override
+        public int getPartitions() {
+            return partitions;
         }
     }
 

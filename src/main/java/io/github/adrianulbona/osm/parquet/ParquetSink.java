@@ -82,16 +82,16 @@ public class ParquetSink<T extends Entity> implements Sink {
         }
     }
 
-    @Override
-    public void release() {
-
-    }
-
     public void addFilter(Predicate<T> predicate) {
         this.filters.add(predicate);
     }
 
     public void removeFilter(Predicate<T> predicate) {
         this.filters.remove(predicate);
+    }
+
+    @Override
+    public void close() {
+
     }
 }

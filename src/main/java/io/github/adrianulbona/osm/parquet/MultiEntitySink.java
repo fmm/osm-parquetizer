@@ -4,7 +4,6 @@ import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.EntityType;
 import org.openstreetmap.osmosis.core.lifecycle.Completable;
-import org.openstreetmap.osmosis.core.lifecycle.Releasable;
 import org.openstreetmap.osmosis.core.task.v0_6.Sink;
 
 import java.nio.file.Path;
@@ -49,11 +48,6 @@ public class MultiEntitySink implements Sink {
         this.observers.forEach(Observer::ended);
     }
 
-    @Override
-    public void release() {
-        this.converters.forEach(Releasable::release);
-    }
-
     public void addObserver(Observer observer) {
         this.observers.add(observer);
     }
@@ -62,7 +56,12 @@ public class MultiEntitySink implements Sink {
         this.observers.remove(observer);
     }
 
-    public interface Observer {
+  @Override
+  public void close() {
+    this.converters.forEach(Completable::close);
+  }
+
+  public interface Observer {
 
         void started();
 

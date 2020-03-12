@@ -8,9 +8,9 @@
     <name>OSM Parquetizer</name>
     <url>http://maven.apache.org</url>
     <properties>
-        <osmosis.version>0.44.1</osmosis.version>
-        <parquet.version>1.8.1</parquet.version>
-        <hadoop.version>2.7.2</hadoop.version>
+        <osmosis.version>0.47.2</osmosis.version>
+        <parquet.version>1.10.1</parquet.version>
+        <hadoop.version>3.1.2</hadoop.version>
         <encoding>UTF-8</encoding>
     </properties>
     <dependencies>
